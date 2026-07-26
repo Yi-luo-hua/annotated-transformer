@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+import os
+
+content = '''# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -319,12 +321,12 @@ class LayerNorm(nn.Module):
 #
 # To facilitate these residual connections, all sub-layers in the
 # model, as well as the embedding layers, produce outputs of dimension
-# $d_{	ext{model}}=512$.
+# $d_{\text{model}}=512$.
 #
 # **【中文对照 / Chinese Translation】**
 # 也就是说，每个子层的输出为 $\mathrm{LayerNorm}(x + \mathrm{Sublayer}(x))$，其中 $\mathrm{Sublayer}(x)$ 是子层自身实现的函数。在将子层的输出与其输入相加并进行归一化之前，我们对子层输出应用 Dropout 随机失活。
 #
-# 为了便于实现残差连接，模型中所有的子层以及词嵌入层的输出维度统一设定为 $d_{	ext{model}}=512$。
+# 为了便于实现残差连接，模型中所有的子层以及词嵌入层的输出维度统一设定为 $d_{\text{model}}=512$。
 
 # %%
 class SublayerConnection(nn.Module):
@@ -518,13 +520,13 @@ show_example(example_mask)
 # compute the matrix of outputs as:
 #
 # $$
-#    \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(rac{QK^T}{\sqrt{d_k}})V
+#    \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
 # $$
 #
 # **【中文对照 / Chinese Translation】**
 # 在实践中，我们同时对一组 Query 进行注意力计算，并将其打包拼接成矩阵 $Q$。Keys 和 Values 也分别打包成矩阵 $K$ 和 $V$。输出矩阵的计算公式为：
 # $$
-#    \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(rac{QK^T}{\sqrt{d_k}})V
+#    \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
 # $$
 
 # %%
@@ -547,7 +549,7 @@ def attention(query, key, value, mask=None, dropout=None):
 # attention [(cite)](https://arxiv.org/abs/1409.0473), and dot-product
 # (multiplicative) attention.  Dot-product attention is identical to
 # our algorithm, except for the scaling factor of
-# $rac{1}{\sqrt{d_k}}$. Additive attention computes the
+# $\frac{1}{\sqrt{d_k}}$. Additive attention computes the
 # compatibility function using a feed-forward network with a single
 # hidden layer.  While the two are similar in theoretical complexity,
 # dot-product attention is much faster and more space-efficient in
@@ -565,12 +567,12 @@ def attention(query, key, value, mask=None, dropout=None):
 # variables with mean $0$ and variance $1$.  Then their dot product,
 # $q \cdot k = \sum_{i=1}^{d_k} q_ik_i$, has mean $0$ and variance
 # $d_k$.). To counteract this effect, we scale the dot products by
-# $rac{1}{\sqrt{d_k}}$.
+# $\frac{1}{\sqrt{d_k}}$.
 #
 # **【中文对照 / Chinese Translation】**
-# 两种最常用的注意力函数是加性注意力（Additive Attention）和点积/乘性注意力（Dot-Product Attention）。点积注意力除了缩放因子 $rac{1}{\sqrt{d_k}}$ 之外与我们的算法完全相同。加性注意力使用带有单个隐层的前馈网络来计算匹配函数。虽然两者在理论复杂度上相似，但在实践中，点积注意力要快得多且更节省空间，因为它可以利用高度优化的矩阵乘法运算来实现。
+# 两种最常用的注意力函数是加性注意力（Additive Attention）和点积/乘性注意力（Dot-Product Attention）。点积注意力除了缩放因子 $\frac{1}{\sqrt{d_k}}$ 之外与我们的算法完全相同。加性注意力使用带有单个隐层的前馈网络来计算匹配函数。虽然两者在理论复杂度上相似，但在实践中，点积注意力要快得多且更节省空间，因为它可以利用高度优化的矩阵乘法运算来实现。
 #
-# 虽然对于较小的 $d_k$ 值，这两种机制的表现相似，但在没有缩放因子的情况下，随着 $d_k$ 增大，加性注意力超越了点积注意力。我们怀疑，对于较大的 $d_k$ 值，点积的数值量级会急剧增大，从而将 Softmax 函数推向具有极小梯度的饱和区域（为了解释为什么点积会变大：假设 $q$ 和 $k$ 的各分量是均值为 0、方差为 1 的独立随机变量，则它们的点积 $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ 的均值为 0，方差为 $d_k$）。为了抵消这种副作用，我们将点积乘以缩放因子 $rac{1}{\sqrt{d_k}}$。
+# 虽然对于较小的 $d_k$ 值，这两种机制的表现相似，但在没有缩放因子的情况下，随着 $d_k$ 增大，加性注意力超越了点积注意力。我们怀疑，对于较大的 $d_k$ 值，点积的数值量级会急剧增大，从而将 Softmax 函数推向具有极小梯度的饱和区域（为了解释为什么点积会变大：假设 $q$ 和 $k$ 的各分量是均值为 0、方差为 1 的独立随机变量，则它们的点积 $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ 的均值为 0，方差为 $d_k$）。为了抵消这种副作用，我们将点积乘以缩放因子 $\frac{1}{\sqrt{d_k}}$。
 
 # %% [markdown]
 # ![](images/ModalNet-20.png)
@@ -582,18 +584,18 @@ def attention(query, key, value, mask=None, dropout=None):
 #
 # $$
 # \mathrm{MultiHead}(Q, K, V) =
-#     \mathrm{Concat}(\mathrm{head_1}, ..., \mathrm{head_h})W^O \
-#     	ext{where}~\mathrm{head_i} = \mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)
+#     \mathrm{Concat}(\mathrm{head_1}, ..., \mathrm{head_h})W^O \\
+#     \text{where}~\mathrm{head_i} = \mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)
 # $$
 #
 # Where the projections are parameter matrices $W^Q_i \in
-# \mathbb{R}^{d_{	ext{model}} 	imes d_k}$, $W^K_i \in
-# \mathbb{R}^{d_{	ext{model}} 	imes d_k}$, $W^V_i \in
-# \mathbb{R}^{d_{	ext{model}} 	imes d_v}$ and $W^O \in
-# \mathbb{R}^{hd_v 	imes d_{	ext{model}}}$.
+# \mathbb{R}^{d_{\text{model}} \times d_k}$, $W^K_i \in
+# \mathbb{R}^{d_{\text{model}} \times d_k}$, $W^V_i \in
+# \mathbb{R}^{d_{\text{model}} \times d_v}$ and $W^O \in
+# \mathbb{R}^{hd_v \times d_{\text{model}}}$.
 #
 # In this work we employ $h=8$ parallel attention layers, or
-# heads. For each of these we use $d_k=d_v=d_{	ext{model}}/h=64$. Due
+# heads. For each of these we use $d_k=d_v=d_{\text{model}}/h=64$. Due
 # to the reduced dimension of each head, the total computational cost
 # is similar to that of single-head attention with full
 # dimensionality.
@@ -602,12 +604,12 @@ def attention(query, key, value, mask=None, dropout=None):
 # 多头注意力（Multi-Head Attention）允许模型联合关注来自不同位置的不同表示子空间（Subspaces）的信息。而如果只有一个注意力头，对所有位置进行简单平均会抑制这种多角度信息的捕获。
 # $$
 # \mathrm{MultiHead}(Q, K, V) =
-#     \mathrm{Concat}(\mathrm{head_1}, ..., \mathrm{head_h})W^O \
-#     	ext{where}~\mathrm{head_i} = \mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)
+#     \mathrm{Concat}(\mathrm{head_1}, ..., \mathrm{head_h})W^O \\
+#     \text{where}~\mathrm{head_i} = \mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)
 # $$
-# 其中线性投影是参数矩阵 $W^Q_i \in \mathbb{R}^{d_{	ext{model}} 	imes d_k}$、$W^K_i \in \mathbb{R}^{d_{	ext{model}} 	imes d_k}$、$W^V_i \in \mathbb{R}^{d_{	ext{model}} 	imes d_v}$ 以及 $W^O \in \mathbb{R}^{hd_v 	imes d_{	ext{model}}}$。
+# 其中线性投影是参数矩阵 $W^Q_i \in \mathbb{R}^{d_{\text{model}} \times d_k}$、$W^K_i \in \mathbb{R}^{d_{\text{model}} \times d_k}$、$W^V_i \in \mathbb{R}^{d_{\text{model}} \times d_v}$ 以及 $W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}$。
 #
-# 在这项工作中，我们采用 $h=8$ 个平行的注意力层（即8个注意力头）。对于每个头，我们设定 $d_k = d_v = d_{	ext{model}}/h = 64$。由于减少了每个头的维度，总计算成本与具有全维度单头注意力的计算成本非常接近。
+# 在这项工作中，我们采用 $h=8$ 个平行的注意力层（即8个注意力头）。对于每个头，我们设定 $d_k = d_v = d_{\text{model}}/h = 64$。由于减少了每个头的维度，总计算成本与具有全维度单头注意力的计算成本非常接近。
 
 # %%
 class MultiHeadedAttention(nn.Module):
@@ -695,13 +697,13 @@ class MultiHeadedAttention(nn.Module):
 # positions, they use different parameters from layer to
 # layer. Another way of describing this is as two convolutions with
 # kernel size 1.  The dimensionality of input and output is
-# $d_{	ext{model}}=512$, and the inner-layer has dimensionality
+# $d_{\text{model}}=512$, and the inner-layer has dimensionality
 # $d_{ff}=2048$.
 #
 # **【中文对照 / Chinese Translation】**
 # 除了注意力子层之外，编码器和解码器中的每一层都包含一个全连接的前馈网络，该网络独立且相同地作用于每个位置。它由两个线性变换组成，中间带有 ReLU 激活函数：
 # $$\mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2$$
-# 虽然线性变换在不同位置之间是相同的，但它们在层与层之间使用不同的参数。描述它的另一种方式是将其视为两个核大小为 1 的卷积。输入和输出的维度为 $d_{	ext{model}}=512$，中间隐层的维度为 $d_{ff}=2048$。
+# 虽然线性变换在不同位置之间是相同的，但它们在层与层之间使用不同的参数。描述它的另一种方式是将其视为两个核大小为 1 的卷积。输入和输出的维度为 $d_{\text{model}}=512$，中间隐层的维度为 $d_{ff}=2048$。
 
 # %%
 class PositionwiseFeedForward(nn.Module):
@@ -725,16 +727,16 @@ class PositionwiseFeedForward(nn.Module):
 #
 # Similarly to other sequence transduction models, we use learned
 # embeddings to convert the input tokens and output tokens to vectors
-# of dimension $d_{	ext{model}}$.  We also use the usual learned
+# of dimension $d_{\text{model}}$.  We also use the usual learned
 # linear transformation and softmax function to convert the decoder
 # output to predicted next-token probabilities.  In our model, we
 # share the same weight matrix between the two embedding layers and
 # the pre-softmax linear transformation, similar to
 # [(cite)](https://arxiv.org/abs/1608.05859). In the embedding layers,
-# we multiply those weights by $\sqrt{d_{	ext{model}}}$.
+# we multiply those weights by $\sqrt{d_{\text{model}}}$.
 #
 # **【中文对照 / Chinese Translation】**
-# 与其他序列转换模型类似，我们使用可学习的词嵌入（Learned Embeddings）将输入 Token 和输出 Token 转换为维度为 $d_{	ext{model}}$ 的向量。我们还使用常见的可学习线性变换与 Softmax 函数，将解码器输出转换为预测下一个 Token 的概率。在我们的模型中，源语言嵌入层、目标语言嵌入层以及 Softmax 前的线性变换这三者共享相同的权重矩阵。在嵌入层中，我们将这些权重乘以 $\sqrt{d_{	ext{model}}}$ 进行缩放。
+# 与其他序列转换模型类似，我们使用可学习的词嵌入（Learned Embeddings）将输入 Token 和输出 Token 转换为维度为 $d_{\text{model}}$ 的向量。我们还使用常见的可学习线性变换与 Softmax 函数，将解码器输出转换为预测下一个 Token 的概率。在我们的模型中，源语言嵌入层、目标语言嵌入层以及 Softmax 前的线性变换这三者共享相同的权重矩阵。在嵌入层中，我们将这些权重乘以 $\sqrt{d_{\text{model}}}$ 进行缩放。
 
 # %%
 class Embeddings(nn.Module):
@@ -759,15 +761,15 @@ class Embeddings(nn.Module):
 # the tokens in the sequence.  To this end, we add "positional
 # encodings" to the input embeddings at the bottoms of the encoder and
 # decoder stacks.  The positional encodings have the same dimension
-# $d_{	ext{model}}$ as the embeddings, so that the two can be summed.
+# $d_{\text{model}}$ as the embeddings, so that the two can be summed.
 # There are many choices of positional encodings, learned and fixed
 # [(cite)](https://arxiv.org/pdf/1705.03122.pdf).
 #
 # In this work, we use sine and cosine functions of different frequencies:
 #
-# $$PE_{(pos,2i)} = \sin(pos / 10000^{2i/d_{	ext{model}}})$$
+# $$PE_{(pos,2i)} = \sin(pos / 10000^{2i/d_{\text{model}}})$$
 #
-# $$PE_{(pos,2i+1)} = \cos(pos / 10000^{2i/d_{	ext{model}}})$$
+# $$PE_{(pos,2i+1)} = \cos(pos / 10000^{2i/d_{\text{model}}})$$
 #
 # where $pos$ is the position and $i$ is the dimension.  That is, each
 # dimension of the positional encoding corresponds to a sinusoid.  The
@@ -782,11 +784,11 @@ class Embeddings(nn.Module):
 # the base model, we use a rate of $P_{drop}=0.1$.
 #
 # **【中文对照 / Chinese Translation】**
-# 由于我们的模型既不包含循环结构也不包含卷积结构，为了让模型能够利用序列的顺序信息，我们必须引入关于序列中 Token 相对或绝对位置的信息。为此，我们在编码器和解码器堆栈底部的输入词嵌入中相加了“位置编码”（Positional Encodings）。位置编码具有与词嵌入相同的维度 $d_{	ext{model}}$，以便两者可以直接相加。位置编码有许多选择，包括可学习的和固定公式计算的。
+# 由于我们的模型既不包含循环结构也不包含卷积结构，为了让模型能够利用序列的顺序信息，我们必须引入关于序列中 Token 相对或绝对位置的信息。为此，我们在编码器和解码器堆栈底部的输入词嵌入中相加了“位置编码”（Positional Encodings）。位置编码具有与词嵌入相同的维度 $d_{\text{model}}$，以便两者可以直接相加。位置编码有许多选择，包括可学习的和固定公式计算的。
 #
 # 在这项工作中，我们使用了不同频率的正弦和余弦函数：
-# $$PE_{(pos,2i)} = \sin(pos / 10000^{2i/d_{	ext{model}}})$$
-# $$PE_{(pos,2i+1)} = \cos(pos / 10000^{2i/d_{	ext{model}}})$$
+# $$PE_{(pos,2i)} = \sin(pos / 10000^{2i/d_{\text{model}}})$$
+# $$PE_{(pos,2i+1)} = \cos(pos / 10000^{2i/d_{\text{model}}})$$
 # 其中 $pos$ 为位置，$i$ 为维度。也就是说，位置编码的每个维度都对应一个正弦波。波长形成从 $2\pi$ 到 $10000 \cdot 2\pi$ 的等比数列。我们选择这个函数是因为我们假设它能让模型轻松学会根据相对位置来进行注意力计算，因为对于任何固定的偏移量 $k$，$PE_{pos+k}$ 都可以表示为 $PE_{pos}$ 的线性函数。
 #
 # 此外，我们在编码器和解码器堆栈中，对词嵌入与位置编码相加后的结果应用了 Dropout 随机失活。对于基础模型，我们设定的失活率为 $P_{drop}=0.1$。
@@ -1151,12 +1153,12 @@ show_example(example_learning_schedule)
 # %% [markdown]
 # ## Optimizer (优化器与学习率 Warmup)
 #
-# We used the Adam optimizer with $eta_1=0.9$, $eta_2=0.98$ and
+# We used the Adam optimizer with $\beta_1=0.9$, $\beta_2=0.98$ and
 # $\epsilon=10^{-9}$. We varied the learning rate over the course of
 # training, according to the formula:
 #
 # $$
-# lrate = d_{	ext{model}}^{-0.5} \cdot
+# lrate = d_{\text{model}}^{-0.5} \cdot
 #   \min({step\_num}^{-0.5},
 #     {step\_num} \cdot {warmup\_steps}^{-1.5})
 # $$
@@ -1167,9 +1169,9 @@ show_example(example_learning_schedule)
 # used $warmup\_steps=4000$.
 #
 # **【中文对照 / Chinese Translation】**
-# 我们使用了 Adam 优化器，超参数设置为 $eta_1=0.9$、$eta_2=0.98$ 以及 $\epsilon=10^{-9}$。在训练过程中，我们根据以下公式动态调整学习率：
+# 我们使用了 Adam 优化器，超参数设置为 $\beta_1=0.9$、$\beta_2=0.98$ 以及 $\epsilon=10^{-9}$。在训练过程中，我们根据以下公式动态调整学习率：
 # $$
-# lrate = d_{	ext{model}}^{-0.5} \cdot
+# lrate = d_{\text{model}}^{-0.5} \cdot
 #   \min({step\_num}^{-0.5},
 #     {step\_num} \cdot {warmup\_steps}^{-1.5})
 # $$
@@ -1462,3 +1464,9 @@ def build_vocabulary(spacy_de, spacy_en):
 #
 # **【中文对照 / Chinese Translation】**
 # 希望这份代码对大家未来的研究与学习有所帮助！
+'''
+
+with open(os.path.join(r"e:\GOGOGO!\transformer", "the_annotated_transformer.py"), "w", encoding="utf-8") as f:
+    f.write(content)
+
+print("Successfully updated the_annotated_transformer.py with conditional imports.")
