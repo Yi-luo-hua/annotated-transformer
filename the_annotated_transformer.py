@@ -89,16 +89,17 @@ warnings.filterwarnings("ignore")
 try:
     import pandas as pd
     import altair as alt
+    alt.data_transformers.disable_max_rows()
 except ImportError:
     pd = None
     alt = None
 
 try:
-    import spacy
-    import torchtext
-    from torchtext.data.functional import to_map_style_dataset
+    import spacy  # type: ignore
+    import torchtext  # type: ignore
+    from torchtext.data.functional import to_map_style_dataset  # type: ignore
     from torch.utils.data import DataLoader
-    from torchtext.vocab import build_vocab_from_iterator
+    from torchtext.vocab import build_vocab_from_iterator  # type: ignore
 except ImportError:
     spacy = None
     torchtext = None
